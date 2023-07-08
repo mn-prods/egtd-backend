@@ -4,6 +4,7 @@ import { UpdateInboxDto } from './dto/update-inbox.dto';
 import { InboxItem } from './entities/inbox-item.entity';
 import { InboxRepository } from './inbox.repository';
 import { User } from '../user/entities/user.entity';
+import { UpdateResult } from 'typeorm';
 
 @Injectable()
 export class InboxService {
@@ -28,8 +29,13 @@ export class InboxService {
     return `This action returns a #${id} inbox`;
   }
 
-  update(id: number, updateInboxDto: UpdateInboxDto) {
-    return `This action updates a #${id} inbox`;
+  async changeItemStatus(id: string, { status }: UpdateInboxDto): Promise<UpdateResult> {
+    return this.inboxRepository
+      .createQueryBuilder()
+      .update()
+      .set({ status })
+      .where({ id })
+      .execute();
   }
 
   remove(id: number) {

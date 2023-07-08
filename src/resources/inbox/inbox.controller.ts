@@ -1,11 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { InboxService } from './inbox.service';
-import { CreateInboxDto } from './dto/create-inbox.dto';
-import { UpdateInboxDto } from './dto/update-inbox.dto';
-import { InboxItem } from './entities/inbox-item.entity';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { GetUser } from 'src/shared/decorator/get-user.decorator';
-import { User } from '../user/entities/user.entity';
 import { JWTUserData } from '../user/dto/jwt-user-data.dto';
+import { ChangeInboxItemStatusDto } from './dto/change-item-status.dto';
+import { CreateInboxDto } from './dto/create-inbox.dto';
+import { InboxItem } from './entities/inbox-item.entity';
+import { InboxService } from './inbox.service';
 
 @Controller('inbox')
 export class InboxController {
@@ -20,7 +19,7 @@ export class InboxController {
   }
 
   @Get()
-  async findAll(@GetUser() {userId}: JWTUserData): Promise<InboxItem[]> {
+  async findAll(@GetUser() { userId }: JWTUserData): Promise<InboxItem[]> {
     return this.inboxService.findAll(userId);
   }
 
@@ -29,9 +28,9 @@ export class InboxController {
     return this.inboxService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInboxDto: UpdateInboxDto) {
-    return this.inboxService.update(+id, updateInboxDto);
+  @Patch(':id/status')
+  update(@Param('id') id: string, @Body() updateInboxDto: ChangeInboxItemStatusDto) {
+    return this.inboxService.changeItemStatus(id, updateInboxDto);
   }
 
   @Delete(':id')
