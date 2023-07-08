@@ -13,7 +13,10 @@ export class InboxItem extends BaseEntity {
   @Column({ nullable: false, default: InboxItemStatus.open })
   status: InboxItemStatus;
 
-  @ManyToOne(() => User, (user) => user.inboxItems)
+  @ManyToOne(() => User, (user) => user.inboxItems, { nullable: false })
   @JoinColumn({ name: 'owner_uid' })
   owner: User;
+
+  @Column({ nullable: true })
+  label: string;
 }

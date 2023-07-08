@@ -13,7 +13,7 @@ import { PassportModule } from '@nestjs/passport';
 import { FirebaseAuthStrategy } from './resources/auth/firebase-auth.strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { FirebaseJwtAuthGuard } from './resources/auth/firebase-jwt.guard';
-import { InboxModule } from './inbox/inbox.module';
+import { InboxModule } from './resources/inbox/inbox.module';
 
 @Module({
   imports: [

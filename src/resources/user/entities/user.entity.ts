@@ -1,17 +1,14 @@
 import {
   BaseEntity,
   Column,
-  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   OneToMany,
-  PrimaryColumn,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn
+  PrimaryColumn
 } from 'typeorm';
 import { Language } from './language.entity';
-import { InboxItem } from 'src/inbox/entities/inbox.entity';
+import { InboxItem } from 'src/resources/inbox/entities/inbox-item.entity';
 
 @Entity({ name: 'users' })
 export class User extends BaseEntity {

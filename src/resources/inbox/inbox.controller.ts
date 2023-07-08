@@ -2,19 +2,26 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { InboxService } from './inbox.service';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UpdateInboxDto } from './dto/update-inbox.dto';
+import { InboxItem } from './entities/inbox-item.entity';
+import { GetUser } from 'src/shared/decorator/get-user.decorator';
+import { User } from '../user/entities/user.entity';
+import { JWTUserData } from '../user/dto/jwt-user-data.dto';
 
 @Controller('inbox')
 export class InboxController {
   constructor(private readonly inboxService: InboxService) {}
 
   @Post()
-  create(@Body() createInboxDto: CreateInboxDto) {
-    return this.inboxService.create(createInboxDto);
+  async create(
+    @Body() createInboxDto: CreateInboxDto,
+    @GetUser() { userId }: JWTUserData
+  ): Promise<InboxItem> {
+    return this.inboxService.create(userId, createInboxDto);
   }
 
   @Get()
-  findAll() {
-    return this.inboxService.findAll();
+  async findAll(@GetUser() {userId}: JWTUserData): Promise<InboxItem[]> {
+    return this.inboxService.findAll(userId);
   }
 
   @Get(':id')
