@@ -35,6 +35,6 @@ export class InboxController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.inboxService.remove(+id);
+    return this.inboxService.remove(id);
   }
 }

@@ -38,7 +38,7 @@ export class InboxService {
       .execute();
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} inbox`;
+  remove(id: string) {
+    return this.inboxRepository.delete({ id });
   }
 }
