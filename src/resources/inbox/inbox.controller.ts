@@ -5,6 +5,7 @@ import { ChangeInboxItemStatusDto } from './dto/change-item-status.dto';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { InboxItem } from './entities/inbox-item.entity';
 import { InboxService } from './inbox.service';
+import { UpdateInboxDto } from './dto/update-inbox.dto';
 
 @Controller('inbox')
 export class InboxController {
@@ -29,8 +30,13 @@ export class InboxController {
   }
 
   @Patch(':id/status')
-  update(@Param('id') id: string, @Body() updateInboxDto: ChangeInboxItemStatusDto) {
-    return this.inboxService.changeItemStatus(id, updateInboxDto);
+  changeItemStatus(@Param('id') id: string, @Body() { status }: UpdateInboxDto) {
+    return this.inboxService.changeItemStatus(id, status);
+  }
+
+  @Patch(':id/label')
+  changeItemLabel(@Param('id') id: string, @Body() { label }: UpdateInboxDto) {
+    return this.inboxService.changeItemLabel(id, label);
   }
 
   @Delete(':id')

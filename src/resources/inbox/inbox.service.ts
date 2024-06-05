@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateInboxDto } from './dto/create-inbox.dto';
 import { UpdateInboxDto } from './dto/update-inbox.dto';
-import { InboxItem } from './entities/inbox-item.entity';
+import { InboxItem, InboxItemStatus } from './entities/inbox-item.entity';
 import { InboxRepository } from './inbox.repository';
 import { User } from '../user/entities/user.entity';
 import { UpdateResult } from 'typeorm';
@@ -29,11 +29,20 @@ export class InboxService {
     return `This action returns a #${id} inbox`;
   }
 
-  async changeItemStatus(id: string, { status }: UpdateInboxDto): Promise<UpdateResult> {
+  async changeItemStatus(id: string, status: InboxItemStatus): Promise<UpdateResult> {
     return this.inboxRepository
       .createQueryBuilder()
       .update()
       .set({ status })
+      .where({ id })
+      .execute();
+  }
+
+  async changeItemLabel(id: string, label: string) {
+    return this.inboxRepository
+      .createQueryBuilder()
+      .update()
+      .set({ label })
       .where({ id })
       .execute();
   }

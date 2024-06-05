@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:20
 
 WORKDIR /app/
 
@@ -28,7 +28,15 @@ RUN npm install -g npm@latest
 # install gcc to compile node-oracledb for arm64
 RUN apt install -y build-essential
 
+# ensure venv is installed
+RUN apt install -y python3.11-venv
+
+
 # install python script dependencies
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+# ensure pip is installed
 RUN apt install -y python3-pip
 RUN pip3 install ortools
 

@@ -4,5 +4,5 @@ import { InboxItemStatus } from '../entities/inbox-item.entity';
 
 export class UpdateInboxDto extends PartialType(CreateInboxDto) {
     label?: string;
-    status: InboxItemStatus;
+    status?: InboxItemStatus;
 }
