@@ -12,11 +12,11 @@ import { Db, MongoClient } from 'mongodb';
             {
               retryWrites: true,
               w: 'majority',
-              appName: 'Cluster-0'
+              appName: 'Cluster-0',
             }
           );
 
-          return client.db('cluster0');
+          return client.db('gtd');
         } catch (e) {
           throw e;
         }

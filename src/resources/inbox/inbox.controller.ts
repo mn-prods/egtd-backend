@@ -4,6 +4,7 @@ import { JWTUserData } from '../user/dto/jwt-user-data.dto';
 import { InboxService } from './inbox.service';
 import { ReplicationPullParams } from 'src/shared/replication-pull-params.dto';
 import { ReplicationPushData } from 'src/mongodb/replication-push.interface';
+import { tap } from 'rxjs';
 
 @Controller('inbox')
 export class InboxController {
@@ -24,7 +25,8 @@ export class InboxController {
   }
 
   @Sse('replication/pull/stream')
-  async pullStream() {
-    return this.inboxService.pullStream$;
+  pullStream(@GetUser() { userId }: JWTUserData) {
+    this.logger.log(`Start replication pull-stream for ${userId}`);
+    return this.inboxService.pullStream$.asObservable();
   }
 }

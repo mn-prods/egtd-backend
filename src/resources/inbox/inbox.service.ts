@@ -53,44 +53,65 @@ export class InboxService {
     const conflicts = [];
     const event = {
       id: this.lastEventId++,
-      documents: [],
-      checkpoint: null
+      type: 'OK',
+      data: { documents: [], checkpoint: null }
     };
-    let documentIds = changeRows.map(({ assumedMasterState }) => assumedMasterState.id);
 
-    const docs = await this.db.collection('inbox').find({ id: { $in: documentIds } }).toArray();
+    // Step 1: Fetch all the real master states for the documents corresponding to `changeRows`
+    const changeRowIds = changeRows.map((changeRow) => changeRow.newDocumentState.id);
+    const realMasterStates = await this.db
+      .collection('inbox')
+      .find({ id: { $in: changeRowIds } })
+      .toArray();
+
+    const realMasterStateMap = new Map();
+    realMasterStates.forEach((state) => realMasterStateMap.set(state.id, state));
+
+    // Step 2: Split `changeRows` into conflicts and non-conflicts
+    const bulkOps = [];
 
     for (const changeRow of changeRows) {
-      const realMasterState = await this.db
-        .collection('inbox')
-        .findOne({ id: changeRow.newDocumentState.id });
+      const realMasterState = realMasterStateMap.get(changeRow.newDocumentState.id);
+
       if (
         (realMasterState && !changeRow.assumedMasterState) ||
         (realMasterState &&
           changeRow.assumedMasterState &&
-          /*
-           * For simplicity we detect conflicts on the server by only compare the updateAt value.
-           * In reality you might want to do a more complex check or do a deep-equal comparison.
-           */
           realMasterState.updatedAt !== changeRow.assumedMasterState.updatedAt)
       ) {
-        // we have a conflict
+        // We have a conflict
         conflicts.push(realMasterState);
       } else {
-        // no conflict -> write the document
-        this.db
-          .collection('inbox')
-          .updateOne({ id: changeRow.newDocumentState.id }, changeRow.newDocumentState);
-        event.documents.push(changeRow.newDocumentState);
-        event.checkpoint = {
+        const updateDoc = { ...changeRow.newDocumentState };
+        delete updateDoc._id; // Remove _id to prevent MongoBulkWriteError
+        // No conflict -> prepare for bulk write
+        const updateOp = {
+          updateOne: {
+            filter: { id: changeRow.newDocumentState.id },
+            update: { $set: updateDoc },
+            upsert: true
+          }
+        };
+        bulkOps.push(updateOp);
+        event.data.documents.push(changeRow.newDocumentState);
+        event.data.checkpoint = {
           id: changeRow.newDocumentState.id,
           updatedAt: changeRow.newDocumentState.updatedAt
         };
       }
     }
-    if (event.documents.length > 0) {
+
+    // Step 3: Perform bulk update/insert operations for non-conflict documents
+    if (bulkOps.length > 0) {
+      await this.db.collection('inbox').bulkWrite(bulkOps);
+    }
+
+    // Step 4: Create an event for the non-conflict documents and push it to `pullStream$`
+    if (event.data.documents.length > 0) {
       this.pullStream$.next(event);
     }
+
+    // Step 5: Return the conflicts
     return conflicts;
   }
 }
