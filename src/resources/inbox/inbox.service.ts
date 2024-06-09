@@ -1,53 +1,96 @@
-import { Injectable } from '@nestjs/common';
-import { CreateInboxDto } from './dto/create-inbox.dto';
-import { UpdateInboxDto } from './dto/update-inbox.dto';
-import { InboxItem, InboxItemStatus } from './entities/inbox-item.entity';
-import { InboxRepository } from './inbox.repository';
-import { User } from '../user/entities/user.entity';
-import { UpdateResult } from 'typeorm';
+import { Inject, Injectable } from '@nestjs/common';
+import { Db } from 'mongodb';
+import { Subject } from 'rxjs';
+import { ReplicationPushData } from 'src/mongodb/replication-push.interface';
+import { ReplicationPullParams } from 'src/shared/replication-pull-params.dto';
 
 @Injectable()
 export class InboxService {
-  constructor(private inboxRepository: InboxRepository) {}
+  lastEventId = 0;
+  pullStream$ = new Subject();
 
-  async create(userUid: string, createInboxDto: CreateInboxDto): Promise<InboxItem> {
-    const newInboxItemData = {
-      ...createInboxDto,
-      owner: { uid: userUid } as User
+  constructor(
+    @Inject('DATABASE_CONNECTION')
+    private db: Db
+  ) {}
+
+  async replicatePull(params: ReplicationPullParams) {
+    const { id, updatedAt, batchSize } = params;
+
+    const documents = await this.db
+      .collection('inbox')
+      .find({
+        $or: [
+          /**
+           * Notice that we have to compare the updatedAt AND the id field
+           * because the updateAt field is not unique and when two documents have
+           * the same updateAt, we can still "sort" them by their id.
+           */
+          {
+            updatedAt: { $gt: updatedAt }
+          },
+          {
+            updatedAt: { $eq: updatedAt },
+            id: { $gt: id }
+          }
+        ]
+      })
+      .limit(batchSize)
+      .toArray();
+
+    const lastOfArray = documents.sort((a, b) => b.updatedAt - a.updatedAt).at(0);
+    const checkpoint =
+      documents.length === 0
+        ? { id, updatedAt }
+        : {
+            id: lastOfArray.id,
+            updatedAt: lastOfArray.updatedAt
+          };
+
+    return { documents, checkpoint };
+  }
+  async replicatePush(changeRows: ReplicationPushData[]) {
+    const conflicts = [];
+    const event = {
+      id: this.lastEventId++,
+      documents: [],
+      checkpoint: null
     };
+    let documentIds = changeRows.map(({ assumedMasterState }) => assumedMasterState.id);
 
-    const newInboxItem = this.inboxRepository.create(newInboxItemData);
+    const docs = await this.db.collection('inbox').find({ id: { $in: documentIds } }).toArray();
 
-    return this.inboxRepository.save(newInboxItem);
-  }
-
-  async findAll(userUid: string): Promise<InboxItem[]> {
-    return this.inboxRepository.find({ where: { owner: { uid: userUid } } });
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} inbox`;
-  }
-
-  async changeItemStatus(id: string, status: InboxItemStatus): Promise<UpdateResult> {
-    return this.inboxRepository
-      .createQueryBuilder()
-      .update()
-      .set({ status })
-      .where({ id })
-      .execute();
-  }
-
-  async changeItemLabel(id: string, label: string) {
-    return this.inboxRepository
-      .createQueryBuilder()
-      .update()
-      .set({ label })
-      .where({ id })
-      .execute();
-  }
-
-  remove(id: string) {
-    return this.inboxRepository.delete({ id });
+    for (const changeRow of changeRows) {
+      const realMasterState = await this.db
+        .collection('inbox')
+        .findOne({ id: changeRow.newDocumentState.id });
+      if (
+        (realMasterState && !changeRow.assumedMasterState) ||
+        (realMasterState &&
+          changeRow.assumedMasterState &&
+          /*
+           * For simplicity we detect conflicts on the server by only compare the updateAt value.
+           * In reality you might want to do a more complex check or do a deep-equal comparison.
+           */
+          realMasterState.updatedAt !== changeRow.assumedMasterState.updatedAt)
+      ) {
+        // we have a conflict
+        conflicts.push(realMasterState);
+      } else {
+        // no conflict -> write the document
+        this.db
+          .collection('inbox')
+          .updateOne({ id: changeRow.newDocumentState.id }, changeRow.newDocumentState);
+        event.documents.push(changeRow.newDocumentState);
+        event.checkpoint = {
+          id: changeRow.newDocumentState.id,
+          updatedAt: changeRow.newDocumentState.updatedAt
+        };
+      }
+    }
+    if (event.documents.length > 0) {
+      this.pullStream$.next(event);
+    }
+    return conflicts;
   }
 }

@@ -1,1 +1,2 @@
 secret-firebase.json filter=git-crypt diff=git-crypt
+X509-cert-2469741395375724761.pem filter=git-crypt diff=git-crypt

@@ -1,46 +1,30 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Query, Sse } from '@nestjs/common';
 import { GetUser } from 'src/shared/decorator/get-user.decorator';
 import { JWTUserData } from '../user/dto/jwt-user-data.dto';
-import { ChangeInboxItemStatusDto } from './dto/change-item-status.dto';
-import { CreateInboxDto } from './dto/create-inbox.dto';
-import { InboxItem } from './entities/inbox-item.entity';
 import { InboxService } from './inbox.service';
-import { UpdateInboxDto } from './dto/update-inbox.dto';
+import { ReplicationPullParams } from 'src/shared/replication-pull-params.dto';
+import { ReplicationPushData } from 'src/mongodb/replication-push.interface';
 
 @Controller('inbox')
 export class InboxController {
+  logger = new Logger(InboxController.name);
+
   constructor(private readonly inboxService: InboxService) {}
 
-  @Post()
-  async create(
-    @Body() createInboxDto: CreateInboxDto,
-    @GetUser() { userId }: JWTUserData
-  ): Promise<InboxItem> {
-    return this.inboxService.create(userId, createInboxDto);
+  @Get('replication/pull')
+  async pull(@Query() pullParams: ReplicationPullParams, @GetUser() { userId }: JWTUserData) {
+    this.logger.log(`Start replication pull for ${userId}`);
+    return this.inboxService.replicatePull(pullParams);
   }
 
-  @Get()
-  async findAll(@GetUser() { userId }: JWTUserData): Promise<InboxItem[]> {
-    return this.inboxService.findAll(userId);
+  @Post('replication/push')
+  async push(@Body() changeRows: ReplicationPushData[], @GetUser() { userId }: JWTUserData) {
+    this.logger.log(`Start replication push for ${userId}`);
+    return this.inboxService.replicatePush(changeRows);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.inboxService.findOne(+id);
-  }
-
-  @Patch(':id/status')
-  changeItemStatus(@Param('id') id: string, @Body() { status }: UpdateInboxDto) {
-    return this.inboxService.changeItemStatus(id, status);
-  }
-
-  @Patch(':id/label')
-  changeItemLabel(@Param('id') id: string, @Body() { label }: UpdateInboxDto) {
-    return this.inboxService.changeItemLabel(id, label);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.inboxService.remove(id);
+  @Sse('replication/pull/stream')
+  async pullStream() {
+    return this.inboxService.pullStream$;
   }
 }

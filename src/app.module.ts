@@ -14,6 +14,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { config } from './ormconfig';
 import { addTransactionalDataSource } from 'typeorm-transactional';
 import { DataSource } from 'typeorm';
+import { MongodbModule } from './mongodb/mongodb.module';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { DataSource } from 'typeorm';
     AuthModule,
     ScheduleModule.forRoot(),
     UserModule,
-    InboxModule
+    InboxModule,
+    MongodbModule
   ],
   controllers: [AppController],
   providers: [
