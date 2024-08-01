@@ -1,20 +1,19 @@
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { addTransactionalDataSource } from 'typeorm-transactional';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { RequestContextMiddleware } from './custom-middleware/request-context.middleware';
+import { MongodbModule } from './mongodb/mongodb.module';
+import { config } from './ormconfig';
 import { AuthModule } from './resources/auth/auth.module';
 import { FirebaseAuthStrategy } from './resources/auth/firebase-auth.strategy';
 import { FirebaseJwtAuthGuard } from './resources/auth/firebase-jwt.guard';
 import { InboxModule } from './resources/inbox/inbox.module';
 import { UserModule } from './resources/user/user.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { config } from './ormconfig';
-import { addTransactionalDataSource } from 'typeorm-transactional';
-import { DataSource } from 'typeorm';
-import { MongodbModule } from './mongodb/mongodb.module';
 
 @Module({
   imports: [
@@ -40,15 +39,15 @@ import { MongodbModule } from './mongodb/mongodb.module';
   providers: [
     AppService,
     FirebaseAuthStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: FirebaseJwtAuthGuard
-    }
+    // {
+    //   provide: APP_GUARD,
+    //   useClass: FirebaseJwtAuthGuard
+    // }
   ],
   exports: [PassportModule]
 })
 export class AppModule {
-  configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(RequestContextMiddleware).forRoutes('*');
-  }
+  // configure(consumer: MiddlewareConsumer): void {
+  //   consumer.apply(RequestContextMiddleware).forRoutes(InboxController);
+  // }
 }

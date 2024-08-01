@@ -25,7 +25,12 @@
     "typeorm:generate": "npm run typeorm -- -d ./src/ormconfig.ts migration:generate ./src/migrations/$npm_config_name",
     "typeorm:create": "npm run typeorm -- migration:create ./src/migrations/$npm_config_name",
     "typeorm:revert": "npm run typeorm -- -d ./src/ormconfig.ts migration:revert",
-    "sonar": "sonarqube-verify"
+    "sonar": "sonarqube-verify"    
+  },
+  "overrides": {
+    "typeorm": {
+      "mongodb": "6.7.0"
+    }
   },
   "dependencies": {
     "@nestjs/axios": "3.0.0",
@@ -56,7 +61,8 @@
     "uuid": "9.0.0",
     "@google-cloud/firestore": "6.5.0",
     "@google-cloud/storage": "6.9.5",
-    "mongodb": "6.7.0"
+    "mongodb": "6.7.0",
+    "googleapis": "140.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "10.0.3",

@@ -1,12 +1,13 @@
-import { Body, Controller, Get, Logger, Post, Query, Sse } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Query, Sse, UseGuards } from '@nestjs/common';
 import { GetUser } from 'src/shared/decorator/get-user.decorator';
 import { JWTUserData } from '../user/dto/jwt-user-data.dto';
 import { InboxService } from './inbox.service';
 import { ReplicationPullParams } from 'src/shared/replication-pull-params.dto';
 import { ReplicationPushData } from 'src/mongodb/replication-push.interface';
-import { tap } from 'rxjs';
+import { FirebaseJwtAuthGuard } from '../auth/firebase-jwt.guard';
 
 @Controller('inbox')
+@UseGuards(FirebaseJwtAuthGuard)
 export class InboxController {
   logger = new Logger(InboxController.name);
 

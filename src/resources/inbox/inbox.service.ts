@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Db } from 'mongodb';
 import { Subject } from 'rxjs';
 import { ReplicationPushData } from 'src/mongodb/replication-push.interface';
+import { mongodbInjectionToken } from 'src/shared/constants';
 import { ReplicationPullParams } from 'src/shared/replication-pull-params.dto';
 
 @Injectable()
@@ -10,7 +11,7 @@ export class InboxService {
   pullStream$ = new Subject();
 
   constructor(
-    @Inject('DATABASE_CONNECTION')
+    @Inject(mongodbInjectionToken)
     private db: Db
   ) {}
 

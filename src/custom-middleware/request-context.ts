@@ -48,6 +48,7 @@ export class RequestContext {
   }
 
   public static currentUser(throwError?: boolean): User {
+    
     const requestContext = RequestContext.currentRequestContext();
 
     if (requestContext) {
@@ -59,7 +60,7 @@ export class RequestContext {
     }
 
     if (throwError) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+      throw new HttpException('Current request is Unauthorized', HttpStatus.UNAUTHORIZED);
     }
 
     return null;
